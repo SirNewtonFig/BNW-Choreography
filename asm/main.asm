@@ -62,3 +62,4 @@ padbyte $FF         ; Reclaim (most of) the rest of the routine
 pad $C23B1B         ; After this, some of the Control code miss condition is still required
 
 incsrc "dance-tables.asm"
+incsrc "dance-descriptions.asm"
