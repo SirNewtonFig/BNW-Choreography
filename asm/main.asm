@@ -45,6 +45,7 @@ FightHelper:
   STZ $B5           ; Set Fight command
   STZ $B8           ; Clear targets (low byte)
   STZ $B9           ; Clear targets (high byte)
+  STZ $3A4C         ; Clear MP cost (fixes Tapir bug)
   JSR $13D3         ; Execute command
 .end
   RTS
@@ -85,6 +86,7 @@ BGHelper:
 
 CharmHelper:
   CMP $ED8E5B,X     ; [displaced] Determine if repeating or shifting
+  PHA               ; Store A
   PHP               ; Store repeat/shift status
   BNE .end          ; Return if shifting
   LDA $3C59,Y       ; Load relic effects 4
@@ -98,6 +100,7 @@ CharmHelper:
   INC $2F30,X       ; Set equipment change flag (force relic effects update)
 .end
   PLP               ; Restore repeat/shift status
+  PLA               ; Restore A
   RTL
 warnpc !warnE6
 
