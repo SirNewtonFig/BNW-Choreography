@@ -1,23 +1,21 @@
 hirom
 
 !freeC2 = $C23AC5   ; Former home of the Control effect handler, ripe for the picking
-!freeE6 = $E68740   ; Freespace at end of "Pointers to Map Names" (E68400-E6877F)
+!warnC2 = $C23B18
+!freeE6 = $E6F440   ; Freespace (80 bytes) before Palette Animation Color Palettes
+!warnE6 = $E6F490
 
-org $C24B5A
-  GetRandom:        ; Random Number Generator 2 (0 to 255)
+org $C201A3
+  JSR FightHelper   ; Hook into "Execute Action" routine for "Added Cut" mechanic
 
 org $C21780
   AND #$FE          ; Always clear Dance status
 
-org $C2179D
-  JSR StumbleCheck  ; Let Moogle Charm bypass stumble chance
+org $C21797
+  JSL CharmHelper   ; Clear Moogle Charm flag if repeating
 
 org $C219ED
   dw $177D          ; Revert Dance code pointer (decouple Moogle Charm from controlled dance)
-
-org $C23C82         ; Reclaim space for Moogle Charm Dance wrapper
-  padbyte $FF
-  pad $C23C8F
 
 org $C205B6         ; Modify how Dance step is determined
   JSR $4B5A         ; A = 0..255 (unchanged from vanilla, included for context)
@@ -26,55 +24,82 @@ org $C205B6         ; Modify how Dance step is determined
   LDA $CFFE80,X     ; Get attack # for the Dance step used
   PLX
   RTS
-
 padbyte $FF
-pad $C205D1          ; 7 bytes reclaimed!
+pad $C205D1         ; 7 bytes reclaimed!
+
+org $C23C82         ; Reclaim space for Moogle Charm Dance wrapper
+padbyte $FF
+pad $C23C8F
+
+org !freeC2
+FightHelper:
+  JSR $021E         ; [displaced] Update mimic data
+  LDA $B5           ; Executed command
+  CMP #$13          ; Check if Dance
+  BNE .end          ; Return otherwise
+  LDA $3C59,X       ; Relic effects 4
+  BIT #$20          ; Check for Moogle Charm flag
+  BEQ .end          ; Return otherwise
+  LDA $3A75         ; Monsters that are alive
+  BEQ .end          ; Return if all monsters are dead
+  STZ $B5           ; Set Fight command
+  STZ $B8           ; Clear targets (low byte)
+  STZ $B9           ; Clear targets (high byte)
+  JSR $13D3         ; Execute command
+.end
+  RTS
+warnpc !warnC2
 
 org !freeE6
-StepHelper:          ; Select step based on RNG value
+StepHelper:         ; Select step based on RNG value
   CMP #$60
-  BCS .common        ; ..do common   if >= #$60 (10/16)
+  BCS .common       ; ..do common   if >= #$60 (10/16)
   CMP #$10
-  BCS .uncommon      ; ..do uncommon if >= #$10 (5/16)
+  BCS .uncommon     ; ..do uncommon if >= #$10 (5/16)
 .rare
-  LDA #$03           ; ..do rare     if < #$10 (1/16)
+  LDA #$03          ; ..do rare     if < #$10 (1/16)
   BRA .end
 .uncommon
   LDA #$02
   BRA .end
-.common              ; Select which common step to use based on background
-  JSR BGHelper       ; ..C = 1 if background matches chosen Dance
-  TDC                ; ..A = 0
-  ADC #$00           ; ..A = 0 if shifting, 1 if repeating
+.common             ; Select which common step to use based on background
+  JSR BGHelper      ; ..C = 1 if background matches chosen Dance
+  TDC               ; ..A = 0
+  ADC #$00          ; ..A = 0 if shifting, 1 if repeating
 .end
   CLC
-  ADC $EE            ; Add step index to Dance table pointer
-  STA $EE            ; Store it
+  ADC $EE           ; Add step index to Dance table pointer
+  STA $EE           ; Store it
   RTL
 
 BGHelper:
-  LDA $3A6F          ; Load selected Dance
-  LDX $11E2          ; Load current background
-  CMP $ED8E5B,X      ; Check if Dance for current BG matches selected Dance
-  BEQ .repeat        ;
-  CLC                ; ..clear carry  if shifting
-  RTS                ;
-.repeat              ;
-  SEC                ; ..set carry if repeating
+  LDA $3A6F         ; Load selected Dance
+  LDX $11E2         ; Load current background
+  CMP $ED8E5B,X     ; Check if Dance for current BG matches selected Dance
+  BEQ .repeat       ;
+  CLC               ; ..clear carry  if shifting
+  RTS               ;
+.repeat             ;
+  SEC               ; ..set carry if repeating
   RTS
 
-
-org !freeC2
-StumbleCheck:
-  PHA
-  LDA $3C59,Y       ; Relic Effects 4
-  BIT #$20          ; Moogle Charm flag (unused in Vanilla)
-  BNE +
-  JSR $3AB3         ; Check for stumble rate if no Charm equipped
-  BRA ++
-+ SEC               ; Proceed without stumble check if Charm equipped
-++ PLA
-  RTS
+CharmHelper:
+  CMP $ED8E5B,X     ; [displaced] Determine if repeating or shifting
+  BNE .end          ; Return if shifting
+  PHP               ; Store repeat/shift status
+  LDA $3C59,Y       ; Load relic effects 4
+  BIT #$20          ; Check for Moogle Charm
+  BEQ .end          ; Return if not equipped
+  AND #$DF          ; Clears Moogle Charm flag
+  STA $3C59,Y       ; Store relic effects 4
+  TYA               ; Transfer (doubled) character index
+  LSR A             ; Halve it
+  TAX               ; Index it
+  INC $2F30,X       ; Set equipment change flag (force relic effects update)
+  PLP               ; Restore repeat/shift status
+.end
+  RTL
+warnpc !warnE6
 
 org $CFFE80 ; Reorganize Dance Step -> Attack Number table
 
@@ -125,4 +150,3 @@ db $73 ; Blizzard   ; Shift
 db $74 ; Surge      ; Repeat
 db $6E ; Mirage     ; Uncommon
 db $7C ; Ice Rabbit ; Rare
-
