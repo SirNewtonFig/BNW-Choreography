@@ -1,7 +1,7 @@
 hirom
 
 !freeC2 = $C23AC5   ; Former home of the Control effect handler, ripe for the picking
-!warnC2 = $C23B18
+!warnC2 = $C23AEE   ; Start of Ryo's "inventory duplication bug" fix
 !freeE6 = $E6F440   ; Freespace (80 bytes) before Palette Animation Color Palettes
 !warnE6 = $E6F490
 
@@ -85,8 +85,8 @@ BGHelper:
 
 CharmHelper:
   CMP $ED8E5B,X     ; [displaced] Determine if repeating or shifting
-  BNE .end          ; Return if shifting
   PHP               ; Store repeat/shift status
+  BNE .end          ; Return if shifting
   LDA $3C59,Y       ; Load relic effects 4
   BIT #$20          ; Check for Moogle Charm
   BEQ .end          ; Return if not equipped
@@ -96,8 +96,8 @@ CharmHelper:
   LSR A             ; Halve it
   TAX               ; Index it
   INC $2F30,X       ; Set equipment change flag (force relic effects update)
-  PLP               ; Restore repeat/shift status
 .end
+  PLP               ; Restore repeat/shift status
   RTL
 warnpc !warnE6
 
