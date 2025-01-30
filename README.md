@@ -12,19 +12,17 @@ sirnewtonfig@gmail.com
 
 ## 1) Description
 
-This patch restructures the Dance command, breaking each biome's list of steps up into two categories: transition steps and sustain steps.
-* Transition steps are those that can be chosen from when you dance a new background
-* Sustain steps are those that can be chosen when you choose a dance that matches the current background
-
-There are 2 steps in each category, with probabilities as follows:
-* Transition steps: 75%/25%
-* Sustain steps: 60%/40%
+This patch restructures the Dance command in an effort to give the player more control over their actions while Dancing.
+* Dances now have Common and Uncommon steps, with probabilities of 2/3 and 1/3, respectively
+* The Common step that is available to you will depend on whether you're dancing a new background (Shifting) or dancing the current background (Repeating)
+* The Uncommon step is the same whether you are Shifting or Repeating
+* The rare Animal abilities may still occur at a 1/16 chance in place of the Common/Uncommon, as a sort of "crit" Dance
 
 Due to the fluid nature of this system, the following core Dance mechanics have also changed:
 * Dance status is no longer persistent under any circumstances
 * Instead, the Moogle Charm removes stumble rates entirely (otherwise dicated by Stamina)
 
-The intended purpose of this patch is to replace unpredictability with effort and planning. Any time you select a Dance, there will only be 2 possible outcomes, one of which is more likely than the other to occur. By mixing up dances from round to round, you can create routines of desired effects instead of simply camping out on a single Dance and hoping for the best – though this can still be useful at times, too.
+The overall goal is to replace unpredictability with effort and planning. The Common step being 2/3 likely to occur gives you very good odds you will get an outcome you desire. By Shifting dances from round to round, you can create routines of desired effects instead of simply camping out on a single Dance and hoping for the best – though this can still be useful at times, too!
 
 ## 2) Files
 ```
